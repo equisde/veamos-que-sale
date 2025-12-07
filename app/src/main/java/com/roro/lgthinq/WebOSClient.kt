@@ -37,7 +37,8 @@ class WebOSClient(
         webSocket = object : WebSocketClient(uri) {
             override fun onOpen(handshake: ServerHandshake?) {
                 Log.d(TAG, "✅ WebSocket conectado exitosamente")
-                onLog("✅ WebSocket conectado")
+                Log.d(TAG, "Handshake HTTP status: ${handshake?.httpStatus}")
+                onLog("✅ WebSocket conectado - HTTP ${handshake?.httpStatus}")
                 register()
             }
 
@@ -49,7 +50,7 @@ class WebOSClient(
 
             override fun onClose(code: Int, reason: String?, remote: Boolean) {
                 Log.d(TAG, "❌ WebSocket cerrado - Code: $code, Reason: $reason, Remote: $remote")
-                onLog("❌ WebSocket cerrado - Code: $code")
+                onLog("❌ WebSocket cerrado - Code: $code, Reason: ${reason ?: "sin razón"}, Remote: $remote")
                 onDisconnected()
             }
 
@@ -64,19 +65,27 @@ class WebOSClient(
                         "Tiempo de espera agotado. El TV no responde"
                     else -> ex?.message ?: "Error desconocido conectando al TV"
                 }
-                onLog("⚠️ Error: ${ex?.message}")
+                onLog("⚠️ Error WebSocket: ${ex?.javaClass?.simpleName} - ${ex?.message}")
                 onError(errorMsg)
             }
         }
         
         try {
-            Log.d(TAG, "🔌 Intentando conectar WebSocket...")
-            onLog("⏳ Iniciando conexión WebSocket...")
+            Log.d(TAG, "🔌 Configurando WebSocket...")
+            onLog("⏳ Configurando WebSocket (timeout: ${CONNECTION_TIMEOUT/1000}s)...")
+            
+            // Configurar headers compatibles con LG webOS
+            webSocket?.addHeader("Origin", "file://")
+            webSocket?.addHeader("Sec-WebSocket-Protocol", "lge-tv")
+            
             webSocket?.setConnectionLostTimeout(CONNECTION_TIMEOUT / 1000)
+            
+            onLog("🚀 Iniciando conexión...")
             webSocket?.connect()
+            
         } catch (e: Exception) {
             Log.e(TAG, "💥 Excepción al intentar conectar", e)
-            onLog("💥 Excepción: ${e.message}")
+            onLog("💥 Excepción al conectar: ${e.javaClass.simpleName} - ${e.message}")
             onError("Error iniciando conexión: ${e.message}")
         }
     }
