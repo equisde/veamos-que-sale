@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LG ThinQ RoRo</string>
+    
+    <!-- Connection -->
+    <string name="status_disconnected">● Desconectado</string>
+    <string name="status_connecting">● Conectando...</string>
+    <string name="status_connected">● Conectado</string>
+    <string name="status_pairing">● Esperando confirmación en TV</string>
+    
+    <!-- Buttons -->
+    <string name="btn_connect">Conectar</string>
+    <string name="btn_disconnect">Desconectar</string>
+    <string name="btn_auto_discover">🔍 Buscar TV automáticamente</string>
+    
+    <!-- Controls -->
+    <string name="volume">VOL</string>
+    <string name="channel">CH</string>
+    <string name="mute">🔇 MUTE</string>
+    <string name="home">Home</string>
+    <string name="power">Power</string>
+    
+    <!-- Apps -->
+    <string name="apps_title">🎬 Apps Rápidas</string>
+    
+    <!-- Messages -->
+    <string name="msg_no_tvs_found">No se encontraron TVs en la red</string>
+    <string name="msg_tv_paired">TV emparejado correctamente</string>
+    <string name="msg_accept_pairing">Acepta la solicitud de pairing en tu TV</string>
+    <string name="msg_enter_ip">Por favor ingresa la IP del TV</string>
+    
+    <!-- Hints -->
+    <string name="hint_tv_ip">IP del TV (ej: 192.168.1.100)</string>
+</resources>

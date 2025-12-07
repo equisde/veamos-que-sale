@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="lg_red">#A50034</color>
+    <color name="lg_blue">#00A3E0</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="background_dark">#0A0A0A</color>
+    <color name="card_background">#1A1A1A</color>
+    <color name="button_background">#2A2A2A</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#888888</color>
+    <color name="status_connected">#4CAF50</color>
+    <color name="status_disconnected">#FF6B6B</color>
+</resources>
