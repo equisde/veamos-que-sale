@@ -24,38 +24,61 @@ class WebOSClient(
     companion object {
         private const val TAG = "WebOSClient"
         private const val WS_PORT = 3000
+        private const val CONNECTION_TIMEOUT = 10000 // 10 segundos
     }
 
     fun connect(savedClientKey: String? = null) {
+        Log.d(TAG, "Iniciando conexión a $tvIp:$WS_PORT")
         clientKey = savedClientKey
         val uri = URI("ws://$tvIp:$WS_PORT/")
         
         webSocket = object : WebSocketClient(uri) {
             override fun onOpen(handshake: ServerHandshake?) {
-                Log.d(TAG, "WebSocket abierto")
+                Log.d(TAG, "✅ WebSocket conectado exitosamente")
                 register()
             }
 
             override fun onMessage(message: String?) {
-                Log.d(TAG, "Mensaje recibido: $message")
+                Log.d(TAG, "📩 Mensaje recibido: $message")
                 handleMessage(message)
             }
 
             override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                Log.d(TAG, "WebSocket cerrado: $reason")
+                Log.d(TAG, "❌ WebSocket cerrado - Code: $code, Reason: $reason, Remote: $remote")
                 onDisconnected()
             }
 
             override fun onError(ex: Exception?) {
-                Log.e(TAG, "WebSocket error", ex)
-                onError(ex?.message ?: "Error desconocido")
+                Log.e(TAG, "⚠️ WebSocket error conectando a $tvIp:$WS_PORT", ex)
+                val errorMsg = when {
+                    ex?.message?.contains("failed to connect") == true -> 
+                        "No se pudo conectar al TV. Verifica:\n1. TV encendido\n2. Misma red WiFi\n3. IP correcta: $tvIp"
+                    ex?.message?.contains("Connection refused") == true -> 
+                        "TV rechazó la conexión. Asegúrate de que el TV esté encendido y en la red"
+                    ex?.message?.contains("timeout") == true -> 
+                        "Tiempo de espera agotado. El TV no responde"
+                    else -> ex?.message ?: "Error desconocido conectando al TV"
+                }
+                onError(errorMsg)
             }
         }
         
-        webSocket?.connect()
+        try {
+            Log.d(TAG, "🔌 Intentando conectar WebSocket...")
+            webSocket?.setConnectionLostTimeout(CONNECTION_TIMEOUT / 1000)
+            webSocket?.connect()
+        } catch (e: Exception) {
+            Log.e(TAG, "💥 Excepción al intentar conectar", e)
+            onError("Error iniciando conexión: ${e.message}")
+        }
     }
 
     private fun register() {
+        Log.d(TAG, "📤 Enviando mensaje de registro (pairingType: PIN)")
+        if (!clientKey.isNullOrEmpty()) {
+            Log.d(TAG, "🔑 Usando client-key guardado: ${clientKey?.take(10)}...")
+        }
+        
         val registerMsg = JsonObject().apply {
             addProperty("type", "register")
             if (!clientKey.isNullOrEmpty()) {
@@ -160,8 +183,12 @@ class WebOSClient(
     }
 
     private fun send(message: String) {
-        Log.d(TAG, "Enviando: $message")
-        webSocket?.send(message)
+        Log.d(TAG, "📡 Enviando: ${message.take(200)}${if(message.length > 200) "..." else ""}")
+        try {
+            webSocket?.send(message)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error enviando mensaje", e)
+        }
     }
 
     fun disconnect() {
