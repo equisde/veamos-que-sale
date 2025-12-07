@@ -38,20 +38,11 @@ jobs:
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
       
-    - name: Build Release APK
-      run: ./gradlew assembleRelease --stacktrace
-      
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: LG-ThinQ-Remote-Debug
         path: app/build/outputs/apk/debug/app-debug.apk
-        
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: LG-ThinQ-Remote-Release
-        path: app/build/outputs/apk/release/app-release-unsigned.apk
         
     - name: Create Release
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
@@ -72,9 +63,8 @@ jobs:
           - Multi-TV support
           - UI inspirada en LG ThinQ oficial
           
-          ## 📦 Archivos
-          - **app-debug.apk**: Versión de desarrollo (firmada automáticamente)
-          - **app-release-unsigned.apk**: Versión release (necesita firma manual)
+          ## 📦 Archivo
+          - **app-debug.apk**: APK firmado para desarrollo (listo para instalar)
           
           ## 🚀 Instalación
           1. Descargar `app-debug.apk`
@@ -86,7 +76,6 @@ jobs:
           **Basado en**: Análisis del APK oficial LG ThinQ
         files: |
           app/build/outputs/apk/debug/app-debug.apk
-          app/build/outputs/apk/release/app-release-unsigned.apk
         draft: false
         prerelease: false
       env:
