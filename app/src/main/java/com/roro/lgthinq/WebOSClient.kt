@@ -14,7 +14,8 @@ class WebOSClient(
     private val onDisconnected: () -> Unit,
     private val onPairingRequired: (String?) -> Unit,
     private val onRegistered: (String) -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
+    private val onLog: (String) -> Unit
 ) {
     private var webSocket: WebSocketClient? = null
     private val gson = Gson()
@@ -29,22 +30,26 @@ class WebOSClient(
 
     fun connect(savedClientKey: String? = null) {
         Log.d(TAG, "Iniciando conexión a $tvIp:$WS_PORT")
+        onLog("🔌 Conectando a ws://$tvIp:$WS_PORT/")
         clientKey = savedClientKey
         val uri = URI("ws://$tvIp:$WS_PORT/")
         
         webSocket = object : WebSocketClient(uri) {
             override fun onOpen(handshake: ServerHandshake?) {
                 Log.d(TAG, "✅ WebSocket conectado exitosamente")
+                onLog("✅ WebSocket conectado")
                 register()
             }
 
             override fun onMessage(message: String?) {
                 Log.d(TAG, "📩 Mensaje recibido: $message")
+                onLog("📩 Mensaje del TV: ${message?.take(100)}...")
                 handleMessage(message)
             }
 
             override fun onClose(code: Int, reason: String?, remote: Boolean) {
                 Log.d(TAG, "❌ WebSocket cerrado - Code: $code, Reason: $reason, Remote: $remote")
+                onLog("❌ WebSocket cerrado - Code: $code")
                 onDisconnected()
             }
 
@@ -59,24 +64,29 @@ class WebOSClient(
                         "Tiempo de espera agotado. El TV no responde"
                     else -> ex?.message ?: "Error desconocido conectando al TV"
                 }
+                onLog("⚠️ Error: ${ex?.message}")
                 onError(errorMsg)
             }
         }
         
         try {
             Log.d(TAG, "🔌 Intentando conectar WebSocket...")
+            onLog("⏳ Iniciando conexión WebSocket...")
             webSocket?.setConnectionLostTimeout(CONNECTION_TIMEOUT / 1000)
             webSocket?.connect()
         } catch (e: Exception) {
             Log.e(TAG, "💥 Excepción al intentar conectar", e)
+            onLog("💥 Excepción: ${e.message}")
             onError("Error iniciando conexión: ${e.message}")
         }
     }
 
     private fun register() {
         Log.d(TAG, "📤 Enviando mensaje de registro (pairingType: PIN)")
+        onLog("📤 Enviando registro con pairingType: PIN")
         if (!clientKey.isNullOrEmpty()) {
             Log.d(TAG, "🔑 Usando client-key guardado: ${clientKey?.take(10)}...")
+            onLog("🔑 Usando client-key guardado")
         }
         
         val registerMsg = JsonObject().apply {
@@ -135,11 +145,14 @@ class WebOSClient(
             val json = gson.fromJson(message, JsonObject::class.java)
             val type = json.get("type")?.asString
             
+            onLog("🔍 Tipo de mensaje: $type")
+            
             when (type) {
                 "registered" -> {
                     val key = json.getAsJsonObject("payload")?.get("client-key")?.asString
                     if (key != null) {
                         clientKey = key
+                        onLog("🔐 Client-key recibido del TV")
                         onRegistered(key)
                     }
                     onConnected()
@@ -147,15 +160,18 @@ class WebOSClient(
                 "response" -> {
                     // Respuesta a comandos
                     Log.d(TAG, "Respuesta: $message")
+                    onLog("✅ Comando ejecutado")
                 }
                 "prompt" -> {
                     // El TV está mostrando el PIN
                     val pinCode = json.getAsJsonObject("payload")?.get("pinCode")?.asString
                     Log.d(TAG, "PIN Code recibido: $pinCode")
+                    onLog("🔢 PIN del TV: $pinCode")
                     onPairingRequired(pinCode)
                 }
                 "error" -> {
                     val error = json.get("error")?.asString ?: "Error desconocido"
+                    onLog("❌ Error del TV: $error")
                     if (error.contains("pairing", ignoreCase = true) || error.contains("401", ignoreCase = true)) {
                         onPairingRequired(null)
                     } else {
@@ -165,6 +181,7 @@ class WebOSClient(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error parseando mensaje", e)
+            onLog("⚠️ Error parseando mensaje: ${e.message}")
         }
     }
 
