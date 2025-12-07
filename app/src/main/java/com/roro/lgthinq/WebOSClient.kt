@@ -12,7 +12,7 @@ class WebOSClient(
     private val tvIp: String,
     private val onConnected: () -> Unit,
     private val onDisconnected: () -> Unit,
-    private val onPairingRequired: () -> Unit,
+    private val onPairingRequired: (String?) -> Unit,
     private val onRegistered: (String) -> Unit,
     private val onError: (String) -> Unit
 ) {
@@ -63,8 +63,8 @@ class WebOSClient(
             }
             add("payload", JsonObject().apply {
                 addProperty("forcePairing", false)
-                addProperty("pairingType", "PROMPT")
-                addProperty("manifest", JsonObject().apply {
+                addProperty("pairingType", "PIN")
+                add("manifest", JsonObject().apply {
                     addProperty("manifestVersion", 1)
                     addProperty("appVersion", "2.0")
                     add("signed", JsonObject().apply {
@@ -125,10 +125,16 @@ class WebOSClient(
                     // Respuesta a comandos
                     Log.d(TAG, "Respuesta: $message")
                 }
+                "prompt" -> {
+                    // El TV está mostrando el PIN
+                    val pinCode = json.getAsJsonObject("payload")?.get("pinCode")?.asString
+                    Log.d(TAG, "PIN Code recibido: $pinCode")
+                    onPairingRequired(pinCode)
+                }
                 "error" -> {
                     val error = json.get("error")?.asString ?: "Error desconocido"
-                    if (error.contains("pairing", ignoreCase = true)) {
-                        onPairingRequired()
+                    if (error.contains("pairing", ignoreCase = true) || error.contains("401", ignoreCase = true)) {
+                        onPairingRequired(null)
                     } else {
                         onError(error)
                     }

@@ -204,10 +204,19 @@ class MainActivity : AppCompatActivity() {
                             controlsLayout.visibility = View.GONE
                         }
                     },
-                    onPairingRequired = {
+                    onPairingRequired = { pinCode ->
                         runOnUiThread {
-                            statusText.text = "Acepta el pairing en el TV"
-                            Toast.makeText(this@MainActivity, "Acepta la solicitud de pairing en tu TV", Toast.LENGTH_LONG).show()
+                            if (pinCode != null) {
+                                statusText.text = "🔢 CÓDIGO PIN EN TV: $pinCode"
+                                AlertDialog.Builder(this@MainActivity)
+                                    .setTitle("📺 Pairing Requerido")
+                                    .setMessage("Verifica que el código PIN en tu TV sea:\n\n$pinCode")
+                                    .setPositiveButton("OK", null)
+                                    .show()
+                            } else {
+                                statusText.text = "Acepta el pairing en el TV"
+                                Toast.makeText(this@MainActivity, "Acepta la solicitud de pairing en tu TV", Toast.LENGTH_LONG).show()
+                            }
                         }
                     },
                     onRegistered = { clientKey ->
