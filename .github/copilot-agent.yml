@@ -1,0 +1,59 @@
+# GitHub Copilot Custom Agent - veamos-que-sale Build Monitor
+
+name: build-monitor
+description: Monitor and manage GitHub Actions builds for veamos-que-sale Android app
+version: 1.0.0
+
+# Agent capabilities
+capabilities:
+  - monitor_builds
+  - download_artifacts
+  - trigger_workflows
+  - analyze_errors
+  - suggest_fixes
+
+# Commands
+commands:
+  status:
+    description: Check current build status
+    usage: /agent status
+    
+  watch:
+    description: Monitor build in real-time
+    usage: /agent watch
+    
+  download:
+    description: Download latest APK
+    usage: /agent download
+    
+  logs:
+    description: Get build logs
+    usage: /agent logs [run_id]
+    
+  fix:
+    description: Analyze errors and suggest fixes
+    usage: /agent fix
+    
+  trigger:
+    description: Trigger new build
+    usage: /agent trigger
+
+# Context
+context:
+  repo: veamos-que-sale
+  workflow: build.yml
+  artifact_name: LG-ThinQ-Remote-Debug
+  
+# Prompts
+prompts:
+  analyze_error: |
+    Analyze this Android build error and provide:
+    1. Root cause
+    2. Specific fix
+    3. Code changes needed
+    
+  suggest_optimization: |
+    Review the build configuration and suggest:
+    1. Performance improvements
+    2. Cache optimizations
+    3. Dependency updates
