@@ -128,57 +128,67 @@ class WebOSClient(
     }
 
     private fun register() {
-        Log.d(TAG, "📤 Enviando mensaje de registro (pairingType: PIN)")
-        onLog("📤 Enviando registro con pairingType: PIN")
+        Log.d(TAG, "📤 Enviando mensaje de registro (ConnectSDK compatible)")
+        onLog("📤 Enviando registro (formato ConnectSDK)")
+        
         if (!clientKey.isNullOrEmpty()) {
             Log.d(TAG, "🔑 Usando client-key guardado: ${clientKey?.take(10)}...")
             onLog("🔑 Usando client-key guardado")
+        } else {
+            onLog("📝 Primera conexión, el TV mostrará diálogo de pairing")
         }
         
+        // Crear manifest simplificado como Connect SDK
+        val manifest = JsonObject().apply {
+            addProperty("manifestVersion", 1)
+            add("permissions", gson.toJsonTree(listOf(
+                "LAUNCH",
+                "LAUNCH_WEBAPP",
+                "APP_TO_APP",
+                "CLOSE",
+                "TEST_OPEN",
+                "TEST_PROTECTED",
+                "CONTROL_AUDIO",
+                "CONTROL_DISPLAY",
+                "CONTROL_INPUT_JOYSTICK",
+                "CONTROL_INPUT_MEDIA_RECORDING",
+                "CONTROL_INPUT_MEDIA_PLAYBACK",
+                "CONTROL_INPUT_TV",
+                "CONTROL_INPUT_TEXT",
+                "CONTROL_MOUSE_AND_KEYBOARD",
+                "CONTROL_POWER",
+                "READ_INSTALLED_APPS",
+                "READ_LGE_SDX",
+                "READ_NOTIFICATIONS",
+                "SEARCH",
+                "WRITE_SETTINGS",
+                "WRITE_NOTIFICATION_ALERT",
+                "CONTROL_INPUT_PHONE",
+                "READ_INPUT_DEVICE_LIST",
+                "READ_NETWORK_STATE",
+                "READ_RUNNING_APPS",
+                "READ_TV_CHANNEL_LIST",
+                "WRITE_NOTIFICATION_TOAST",
+                "READ_CURRENT_CHANNEL",
+                "READ_UPDATE_INFO",
+                "UPDATE_FROM_REMOTE_APP",
+                "READ_LGE_TV_INPUT_EVENTS",
+                "READ_TV_CURRENT_TIME"
+            )))
+        }
+        
+        // Mensaje de registro simple como ConnectSDK
         val registerMsg = JsonObject().apply {
             addProperty("type", "register")
+            addProperty("id", "register_0")
+            
+            // Si tenemos client-key, agregarlo al nivel raíz
             if (!clientKey.isNullOrEmpty()) {
                 addProperty("client-key", clientKey)
             }
-            add("payload", JsonObject().apply {
-                addProperty("forcePairing", false)
-                addProperty("pairingType", "PIN")
-                add("manifest", JsonObject().apply {
-                    addProperty("manifestVersion", 1)
-                    addProperty("appVersion", "2.0")
-                    add("signed", JsonObject().apply {
-                        addProperty("created", "20241207")
-                        addProperty("appId", "com.roro.lgthinq")
-                        addProperty("vendorId", "com.roro")
-                        add("localizedAppNames", JsonObject().apply {
-                            addProperty("", "LG ThinQ RoRo")
-                            addProperty("es-ES", "LG ThinQ RoRo")
-                        })
-                        add("localizedVendorNames", JsonObject().apply {
-                            addProperty("", "RoRo")
-                        })
-                        add("permissions", gson.toJsonTree(listOf(
-                            "TEST_SECURE",
-                            "CONTROL_INPUT_TEXT",
-                            "CONTROL_MOUSE_AND_KEYBOARD",
-                            "READ_INSTALLED_APPS",
-                            "READ_LGE_SDX",
-                            "READ_NOTIFICATIONS",
-                            "SEARCH",
-                            "WRITE_SETTINGS",
-                            "WRITE_NOTIFICATION_ALERT",
-                            "CONTROL_POWER",
-                            "READ_CURRENT_CHANNEL",
-                            "READ_RUNNING_APPS",
-                            "READ_UPDATE_INFO",
-                            "UPDATE_FROM_REMOTE_APP",
-                            "READ_LGE_TV_INPUT_EVENTS",
-                            "READ_TV_CURRENT_TIME"
-                        )))
-                        addProperty("serial", "2f930e2d2cfe083771f68e4fe7bb07")
-                    })
-                })
-            })
+            
+            // Payload solo contiene el manifest
+            add("payload", manifest)
         }
         
         send(registerMsg.toString())
