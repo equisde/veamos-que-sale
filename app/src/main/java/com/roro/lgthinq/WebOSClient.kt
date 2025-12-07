@@ -38,7 +38,8 @@ class WebOSClient(
             override fun onOpen(handshake: ServerHandshake?) {
                 Log.d(TAG, "✅ WebSocket conectado exitosamente")
                 Log.d(TAG, "Handshake HTTP status: ${handshake?.httpStatus}")
-                onLog("✅ WebSocket conectado - HTTP ${handshake?.httpStatus}")
+                Log.d(TAG, "Handshake status message: ${handshake?.httpStatusMessage}")
+                onLog("✅ WebSocket ABIERTO - HTTP ${handshake?.httpStatus} ${handshake?.httpStatusMessage}")
                 register()
             }
 
@@ -50,7 +51,27 @@ class WebOSClient(
 
             override fun onClose(code: Int, reason: String?, remote: Boolean) {
                 Log.d(TAG, "❌ WebSocket cerrado - Code: $code, Reason: $reason, Remote: $remote")
-                onLog("❌ WebSocket cerrado - Code: $code, Reason: ${reason ?: "sin razón"}, Remote: $remote")
+                val reasonText = when (code) {
+                    -1 -> "Handshake falló - TV rechazó conexión antes de completar HTTP Upgrade"
+                    1000 -> "Cierre normal"
+                    1001 -> "Endpoint desaparecido"
+                    1002 -> "Error de protocolo"
+                    1003 -> "Datos no aceptables"
+                    1006 -> "Conexión cerrada anormalmente (sin handshake)"
+                    1007 -> "Datos inconsistentes"
+                    1008 -> "Política violada"
+                    1009 -> "Mensaje muy grande"
+                    1010 -> "Extensión faltante"
+                    1011 -> "Error interno del servidor"
+                    else -> reason ?: "Sin razón específica"
+                }
+                onLog("❌ WebSocket cerrado - Code: $code ($reasonText), Remote: $remote")
+                
+                if (code == -1) {
+                    onLog("💡 Sugerencia: El TV puede necesitar 'LG Connect Apps' habilitado")
+                    onError("WebSocket handshake falló. El TV rechazó la conexión.\n\nVerifica:\n1. Settings → General → Mobile TV On\n2. Habilita 'LG Connect Apps'\n3. Reinicia el TV")
+                }
+                
                 onDisconnected()
             }
 
@@ -75,17 +96,33 @@ class WebOSClient(
             onLog("⏳ Configurando WebSocket (timeout: ${CONNECTION_TIMEOUT/1000}s)...")
             
             // Configurar headers compatibles con LG webOS
-            webSocket?.addHeader("Origin", "file://")
-            webSocket?.addHeader("Sec-WebSocket-Protocol", "lge-tv")
+            webSocket?.addHeader("Origin", "null")
+            webSocket?.addHeader("Sec-WebSocket-Version", "13")
             
             webSocket?.setConnectionLostTimeout(CONNECTION_TIMEOUT / 1000)
             
-            onLog("🚀 Iniciando conexión...")
-            webSocket?.connect()
+            onLog("🚀 Intentando conectar (método: connectBlocking)...")
+            
+            // Usar connectBlocking para mejor detección de errores
+            Thread {
+                try {
+                    val connected = webSocket?.connectBlocking(CONNECTION_TIMEOUT.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+                    if (connected == true) {
+                        onLog("✅ connectBlocking exitoso")
+                    } else {
+                        onLog("❌ connectBlocking falló - timeout o rechazo")
+                        onError("No se pudo establecer conexión con el TV en ${CONNECTION_TIMEOUT/1000}s")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en connectBlocking", e)
+                    onLog("💥 Error en connectBlocking: ${e.javaClass.simpleName} - ${e.message}")
+                    onError("Error conectando: ${e.message}")
+                }
+            }.start()
             
         } catch (e: Exception) {
             Log.e(TAG, "💥 Excepción al intentar conectar", e)
-            onLog("💥 Excepción al conectar: ${e.javaClass.simpleName} - ${e.message}")
+            onLog("💥 Excepción al configurar: ${e.javaClass.simpleName} - ${e.message}")
             onError("Error iniciando conexión: ${e.message}")
         }
     }
