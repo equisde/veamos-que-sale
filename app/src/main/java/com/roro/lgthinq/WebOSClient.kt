@@ -98,7 +98,7 @@ class WebOSClient(
                         )))
                         addProperty("serial", "2f930e2d2cfe083771f68e4fe7bb07")
                     })
-                }.toString())
+                })
             })
         }
         
